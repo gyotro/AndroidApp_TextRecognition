@@ -64,6 +64,9 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
+    // Permissions
+    implementation ("com.google.accompanist:accompanist-permissions:0.34.0")
+
     // Camerax implementation
     val cameraxVersion = "1.3.1"
     //noinspection GradleDependency
@@ -80,3 +83,6 @@ dependencies {
     implementation("com.google.mlkit:text-recognition:16.0.0")
     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
 }
+/*repositories {
+    mavenCentral()
+}*/
