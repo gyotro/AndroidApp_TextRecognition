@@ -4,21 +4,20 @@ import android.Manifest
 import android.content.Context
 import android.util.Log
 import android.view.ViewGroup
+import androidx.camera.core.AspectRatio
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -108,17 +107,62 @@ fun CameraComposable(
     lifecycleOwner: LifecycleOwner,
     cameraController: LifecycleCameraController
 ) {
+    var detectedText: String by remember { mutableStateOf("No text detected yet..") }
+
+    fun onTextUpdated(updatedText: String) {
+        detectedText = updatedText
+    }
 
     cameraController.bindToLifecycle(lifecycleOwner)
-    AndroidView(modifier = modifier, factory = { context ->
-        val previewView = PreviewView(context).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        previewView.controller = cameraController
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = androidx.compose.ui.Alignment.BottomCenter
+    ) {
 
-        previewView
-    })
+        AndroidView(modifier = modifier,
+            factory = { context ->
+                PreviewView(context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                }.also {
+                        previewView ->
+                    startTextRecognition(
+                        context = context,
+                        cameraController = cameraController,
+                        lifecycleOwner = lifecycleOwner,
+                        previewView = previewView,
+                        onDetectedTextUpdated = ::onTextUpdated
+                    )
+                }
+
+
+            })
+        Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(androidx.compose.ui.graphics.Color.White)
+                .padding(16.dp),
+            text = detectedText,
+        )
+    }
+}
+
+private fun startTextRecognition(
+    context: Context,
+    cameraController: LifecycleCameraController,
+    lifecycleOwner: LifecycleOwner,
+    previewView: PreviewView,
+    onDetectedTextUpdated: (String) -> Unit
+) {
+
+    cameraController.imageAnalysisTargetSize = CameraController.OutputSize(AspectRatio.RATIO_16_9)
+    cameraController.setImageAnalysisAnalyzer(
+        ContextCompat.getMainExecutor(context),
+        TextRecognitionAnalyzer(onDetectedTextUpdated = onDetectedTextUpdated)
+    )
+
+    cameraController.bindToLifecycle(lifecycleOwner)
+    previewView.controller = cameraController
 }
